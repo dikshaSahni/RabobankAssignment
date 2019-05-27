@@ -22,16 +22,20 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ReportGeneratorService {
 
-	private static final String FILE_HEADER = "Reference, Description";
+	private static final String[] FILE_HEADER = {"Reference", "Description"};
 
 	public void writeFile(List<Record> recordList, String filePath)
 			throws DocumentException, FileNotFoundException {
+		
 		Document document = createDocument(filePath);
 		document.open();
-
+		
 		PdfPTable table = new PdfPTable(2);
 		addTableHeader(table);
-		addRows(table, recordList.listIterator().next());
+		
+		for(Record record : recordList) {
+			addRows(table, record);
+		}
 		document.add(table);
 		document.close();
 	}

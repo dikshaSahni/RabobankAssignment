@@ -6,11 +6,9 @@ package org.rabobank.process.records.service;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 import javax.xml.bind.JAXBException;
 import javax.xml.parsers.ParserConfigurationException;
@@ -76,7 +74,7 @@ public class CustomerRecordsService {
 	 */
 	public ResponseEntity<Object> processInputFiles()
 			throws CustomFileIOException, JAXBException, CsvDataTypeMismatchException, CsvRequiredFieldEmptyException,
-			InstantiationException, IllegalAccessException, IllegalStateException, FileNotFoundException, DocumentException {
+			FileNotFoundException, DocumentException {
 
 		failedRecordsList = new ArrayList<>();
 		try {
@@ -87,7 +85,7 @@ public class CustomerRecordsService {
 						try {
 							failedRecordsList = csvProcessor.processCsvRecords(csvPath, failedRecordsList);
 						} catch (CustomFileIOException exception) {
-							//log.error("Error Occured while file parsing");
+							throw new RuntimeException(exception);
 						}
 					});
 
@@ -97,7 +95,7 @@ public class CustomerRecordsService {
 						try {
 							failedRecordsList = xmlProcessor.processXmlRecords(xmlPath, failedRecordsList);
 						} catch (CustomFileIOException | JAXBException exception) {
-							//log.warn("Error Occured while file parsing");
+							throw new RuntimeException(exception);
 						}
 					});
 
@@ -108,7 +106,7 @@ public class CustomerRecordsService {
 
 		// generateFinalReport
 		reportGenerator.writeFile(failedRecordsList, pathOfOutputRecord);
-
+		
 		return new ResponseEntity<>("Files processed and generated successfully", HttpStatus.OK);
 	}
 }

@@ -1,5 +1,6 @@
 package org.rabobank.process.records.utils;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +32,7 @@ public class CSVFileProcessor {
 	public List<Record> processCsvRecords(Path csvPath, List<Record> recordList) throws CustomFileIOException {
 
 		try {
-			CsvToBean<Record> csvToBeanRecord = new CsvToBeanBuilder<Record>(Files.newBufferedReader(csvPath))
+			CsvToBean<Record> csvToBeanRecord = new CsvToBeanBuilder<Record>(getBufferedReader(csvPath))
 					.withType(Record.class).build();
 			for (Record csvRecord : csvToBeanRecord.parse()) {
 				if (!(recordsValidator.validateEachRecord(csvRecord))) {
@@ -43,5 +44,9 @@ public class CSVFileProcessor {
 			throw new CustomFileIOException("Error Parsing Input Excel File", ioException,
 					ErrorCodes.ERROR_PARSING_INPUT_EXCEL);
 		}
+	}
+
+	protected BufferedReader getBufferedReader(Path csvPath) throws IOException {
+		return Files.newBufferedReader(csvPath);
 	}
 }

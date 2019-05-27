@@ -24,13 +24,6 @@ public class CustomerRecordsExceptionHandlerTest {
 	private CustomerRecordsExceptionHandler handler = new CustomerRecordsExceptionHandler();
 
 	/**
-	 * @throws java.lang.Exception
-	 */
-	@Before
-	public void setUp() throws Exception {
-	}
-
-	/**
 	 * Test method for
 	 * {@link org.rabobank.process.records.exceptionHandling.CustomerRecordsExceptionHandler#handleCustomIOException(org.rabobank.process.records.exceptionHandling.CustomFileIOException)}.
 	 */
