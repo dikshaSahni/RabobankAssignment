@@ -1,21 +1,20 @@
 package org.rabobank.process.records.service;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.util.List;
+import java.util.stream.Stream;
 
-import org.rabobank.process.records.exceptionHandling.CustomFileIOException;
-import org.rabobank.process.records.exceptionHandling.ErrorCodes;
 import org.rabobank.process.records.model.Records.Record;
 import org.springframework.stereotype.Service;
 
-import com.opencsv.CSVWriter;
-import com.opencsv.bean.ColumnPositionMappingStrategy;
-import com.opencsv.bean.StatefulBeanToCsv;
-import com.opencsv.bean.StatefulBeanToCsvBuilder;
-import com.opencsv.exceptions.CsvDataTypeMismatchException;
-import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,45 +24,39 @@ public class ReportGeneratorService {
 
 	private static final String FILE_HEADER = "Reference, Description";
 
-	/**
-	 * @param records  List<FailedRecords>
-	 * @param filePath String
-	 * @throws CsvRequiredFieldEmptyException
-	 * @throws CsvDataTypeMismatchException
-	 * @throws CustomFileIOException
-	 */
-	public void writeFile(List<Record> records, String filePath)
-			throws CustomFileIOException, CsvDataTypeMismatchException, CsvRequiredFieldEmptyException {
+	public void writeFile(List<Record> recordList, String filePath)
+			throws DocumentException, FileNotFoundException {
+		Document document = createDocument(filePath);
+		document.open();
 
-		try (Writer writer = createFile(filePath)) {
-
-			ColumnPositionMappingStrategy<Record> mappingStrategy = new ColumnPositionMappingStrategy<>();
-			mappingStrategy.setType(Record.class);
-
-			// Arrange column name as provided in below array.
-			String[] columns = new String[] { FILE_HEADER };
-			mappingStrategy.setColumnMapping(columns);
-			
-			// Creating StatefulBeanToCsv object
-			StatefulBeanToCsv beanWriter = new StatefulBeanToCsvBuilder<>(writer)
-					.withSeparator(CSVWriter.DEFAULT_SEPARATOR).build();
-
-			if (!(records.isEmpty() || records == null)) {
-				beanWriter.write(records);
-			}
-		} catch (IOException ioException) {
-			throw new CustomFileIOException("Error Writing Output File", ioException,
-					ErrorCodes.ERROR_WRITING_OUTPUT_FILE);
-		}
+		PdfPTable table = new PdfPTable(2);
+		addTableHeader(table);
+		addRows(table, recordList.listIterator().next());
+		document.add(table);
+		document.close();
 	}
 
-	/**
-	 * @param filePath
-	 * @return
-	 * @throws IOException
-	 */
-	protected FileWriter createFile(String filePath) throws IOException {
-		return new FileWriter(filePath + "/report_" + System.currentTimeMillis() + ".csv");
+	private Document createDocument(String filePath) throws FileNotFoundException, DocumentException {
+		Document document = new Document();
+		String reportfilename = filePath + "/report_" + System.currentTimeMillis() + ".pdf";
+		PdfWriter.getInstance(document, new FileOutputStream(reportfilename));
+		return document;
+	}
+
+	private void addTableHeader(PdfPTable table) {
+		Stream.of(FILE_HEADER).forEach(columnTitle -> {
+			PdfPCell header = new PdfPCell();
+			header.setBackgroundColor(BaseColor.LIGHT_GRAY);
+			header.setBorderWidth(2);
+			header.setPhrase(new Phrase(columnTitle));
+			table.addCell(header);
+		});
+	}
+
+	private void addRows(PdfPTable table, Record record) {
+		table.addCell(String.valueOf(record.getReference()));
+		table.addCell(record.getDescription());
+		table.completeRow();
 	}
 
 }

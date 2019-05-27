@@ -3,6 +3,7 @@
  */
 package org.rabobank.process.records.service;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +27,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.xml.sax.SAXException;
 
+import com.itextpdf.text.DocumentException;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 
@@ -66,26 +68,38 @@ public class CustomerRecordsService {
 	 * @throws JAXBException
 	 * @throws CsvRequiredFieldEmptyException
 	 * @throws CsvDataTypeMismatchException
+	 * @throws IllegalStateException
+	 * @throws IllegalAccessException
+	 * @throws InstantiationException
+	 * @throws DocumentException 
+	 * @throws FileNotFoundException 
 	 */
-	public ResponseEntity<Object> processInputFiles() throws CustomFileIOException,
-			 JAXBException, CsvDataTypeMismatchException, CsvRequiredFieldEmptyException {
+	public ResponseEntity<Object> processInputFiles()
+			throws CustomFileIOException, JAXBException, CsvDataTypeMismatchException, CsvRequiredFieldEmptyException,
+			InstantiationException, IllegalAccessException, IllegalStateException, FileNotFoundException, DocumentException {
 
 		failedRecordsList = new ArrayList<>();
 		try {
 
 			// process CSV files
-			Stream<Path> csvPathStream = Files.list(Paths.get(pathOfExcelRecord))
-					.filter(path -> path.toString().endsWith(".csv"));
-			for (Path csvPath : (Iterable<Path>) () -> csvPathStream.iterator()) {
-				failedRecordsList = csvProcessor.processCsvRecords(csvPath, failedRecordsList);
-			}
+			Files.list(Paths.get(pathOfExcelRecord)).filter(path -> path.toString().endsWith(".csv"))
+					.forEach(csvPath -> {
+						try {
+							failedRecordsList = csvProcessor.processCsvRecords(csvPath, failedRecordsList);
+						} catch (CustomFileIOException exception) {
+							//log.error("Error Occured while file parsing");
+						}
+					});
 
 			// process XML files
-			Stream<Path> xmlPathStream = Files.list(Paths.get(pathOfXmlRecord))
-					.filter(path -> path.toString().endsWith(".xml"));
-			for (Path xmlPath : (Iterable<Path>) () -> xmlPathStream.iterator()) {
-				failedRecordsList = xmlProcessor.processXmlRecords(xmlPath, failedRecordsList);
-			}
+			Files.list(Paths.get(pathOfXmlRecord)).filter(path -> path.toString().endsWith(".xml"))
+					.forEach(xmlPath -> {
+						try {
+							failedRecordsList = xmlProcessor.processXmlRecords(xmlPath, failedRecordsList);
+						} catch (CustomFileIOException | JAXBException exception) {
+							//log.warn("Error Occured while file parsing");
+						}
+					});
 
 		} catch (IOException ioException) {
 			throw new CustomFileIOException("Error finding file Path", ioException,
